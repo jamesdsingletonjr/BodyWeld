@@ -413,8 +413,8 @@ function renderSteps(steps, isBlue) {
         <div class="inline-input-box amber" id="k1WearBox">
           <div class="iib-label">Enter current wear values</div>
           <div class="field-row">
-            <div class="field"><label>Moving Tip Wear</label><input type="number" id="k1MovingInput" placeholder="0.00" step="0.01" oninput="onK1WearInput()"></div>
-            <div class="field"><label>Fixed Tip Wear</label><input type="number" id="k1FixedInput" placeholder="0.00" step="0.01" oninput="onK1WearInput()"></div>
+            <div class="field"><label>Moving Tip Wear</label><input type="text" inputmode="decimal" id="k1MovingInput" placeholder="0.00" oninput="onK1WearInput()"></div>
+            <div class="field"><label>Fixed Tip Wear</label><input type="text" inputmode="decimal" id="k1FixedInput" placeholder="0.00" oninput="onK1WearInput()"></div>
           </div>
         </div>`;
     } else if (step.inlineInput === 'k1uml') {
@@ -423,7 +423,7 @@ function renderSteps(steps, isBlue) {
         <div class="inline-input-box amber" id="k1UMLBox">
           <div class="iib-label">Enter current Upper Motion Limit</div>
           <div class="field-row single">
-            <div class="field"><label>Current UML Value</label><input type="number" id="k1UMLInput" placeholder="0.00" step="0.01" oninput="onK1UMLInput()"></div>
+            <div class="field"><label>Current UML Value</label><input type="text" inputmode="decimal" id="k1UMLInput" placeholder="0.00" oninput="onK1UMLInput()"></div>
           </div>
           <div class="calc-result${calcReady?' show':''}" id="k1CalcResult">
             <div class="result-label">New Upper Motion Limit — Enter This Value</div>
@@ -436,7 +436,7 @@ function renderSteps(steps, isBlue) {
         <div class="inline-input-box amber" id="movingInputBox">
           <div class="iib-label">Enter the moving tip wear value</div>
           <div class="field-row single">
-            <div class="field"><label>Moving Tip Wear</label><input type="number" id="p1MovingInput" placeholder="0.00" step="0.01" oninput="onMovingInput()" class="focus-blue"></div>
+            <div class="field"><label>Moving Tip Wear</label><input type="text" inputmode="decimal" id="p1MovingInput" placeholder="0.00" oninput="onMovingInput()" class="focus-blue"></div>
           </div>
         </div>`;
     } else if (step.inlineInput === 'jt7') {
@@ -444,7 +444,7 @@ function renderSteps(steps, isBlue) {
         <div class="inline-input-box" id="jt7InputBox">
           <div class="iib-label">Enter the current JT7 encoder value</div>
           <div class="field-row single">
-            <div class="field"><label>JT7 Encoder Value</label><input type="number" id="p1JT7Input" placeholder="0.000" step="0.001" oninput="onJT7Input()" class="focus-blue"></div>
+            <div class="field"><label>JT7 Encoder Value</label><input type="text" inputmode="decimal" id="p1JT7Input" placeholder="0.000" oninput="onJT7Input()" class="focus-blue"></div></div>
           </div>
           <div class="calc-result blue" id="p1CalcResult">
             <div class="result-label">Calculated New JT7 Value</div>
@@ -529,6 +529,23 @@ function tryCalcP1() {
   }
 }
 
+// ── RESTORE SAVED VALUES INTO INPUT FIELDS ──
+function restoreInputs() {
+  const m = document.getElementById('k1MovingInput');
+  const f = document.getElementById('k1FixedInput');
+  if (m && cd.k1Moving !== undefined) m.value = cd.k1Moving;
+  if (f && cd.k1Fixed  !== undefined) f.value = cd.k1Fixed;
+
+  const u = document.getElementById('k1UMLInput');
+  if (u && cd.k1UML !== undefined) { u.value = cd.k1UML; tryCalcK1(); }
+
+  const pm = document.getElementById('p1MovingInput');
+  if (pm && cd.p1Moving !== undefined) pm.value = cd.p1Moving;
+
+  const pj = document.getElementById('p1JT7Input');
+  if (pj && cd.p1JT7 !== undefined) { pj.value = cd.p1JT7; tryCalcP1(); }
+}
+
 // ── SHOW STEP ──
 function showStep(idx, steps, isBlue) {
   const total = steps.length;
@@ -574,6 +591,7 @@ function showStep(idx, steps, isBlue) {
   if (idx===total-1) { nb.textContent='✓ Complete'; nb.className='nav-btn btn-next complete-btn'; }
   else { nb.textContent='Next →'; nb.className='nav-btn btn-next'+(isBlue?' blue':''); }
 
+  restoreInputs();
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
