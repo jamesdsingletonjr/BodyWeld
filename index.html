@@ -121,6 +121,11 @@
   .field input { background: var(--bg); border: 1px solid var(--border); color: var(--text); font-family: var(--mono); font-size: 20px; padding: 10px 14px; outline: none; transition: border-color 0.2s; width: 100%; -webkit-appearance: none; border-radius: 0; }
   .field input:focus { border-color: var(--accent); }
   .field input.focus-blue:focus { border-color: var(--accent2); }
+  .sign-wrap { display: flex; }
+  .sign-wrap input { flex: 1; min-width: 0; }
+  .sign-toggle { background: var(--panel); border: 1px solid var(--border); border-right: none; color: var(--muted); font-family: var(--mono); font-size: 22px; padding: 0 14px; cursor: pointer; transition: all 0.15s; -webkit-appearance: none; border-radius: 0; line-height: 1; flex-shrink: 0; }
+  .sign-toggle.negative { color: var(--accent); border-color: var(--accent); background: rgba(245,158,11,0.08); }
+  .sign-toggle.negative.blue { color: var(--accent2); border-color: var(--accent2); background: rgba(59,130,246,0.08); }
 
   /* CALC RESULT */
   .calc-result { background: rgba(245,158,11,0.08); border: 1px solid var(--accent); padding: 14px 18px; margin-top: 12px; display: none; }
@@ -413,8 +418,8 @@ function renderSteps(steps, isBlue) {
         <div class="inline-input-box amber" id="k1WearBox">
           <div class="iib-label">Enter current wear values</div>
           <div class="field-row">
-            <div class="field"><label>Moving Tip Wear</label><input type="text" inputmode="decimal" id="k1MovingInput" placeholder="0.00" oninput="onK1WearInput()"></div>
-            <div class="field"><label>Fixed Tip Wear</label><input type="text" inputmode="decimal" id="k1FixedInput" placeholder="0.00" oninput="onK1WearInput()"></div>
+            <div class="field"><label>Moving Tip Wear</label><div class="sign-wrap"><button class="sign-toggle" id="k1MovingSign" onclick="toggleSign('k1Moving')">+</button><input type="text" inputmode="decimal" id="k1MovingInput" placeholder="0.00" oninput="onK1WearInput()"></div></div>
+            <div class="field"><label>Fixed Tip Wear</label><div class="sign-wrap"><button class="sign-toggle" id="k1FixedSign" onclick="toggleSign('k1Fixed')">+</button><input type="text" inputmode="decimal" id="k1FixedInput" placeholder="0.00" oninput="onK1WearInput()"></div></div>
           </div>
         </div>`;
     } else if (step.inlineInput === 'k1uml') {
@@ -423,7 +428,7 @@ function renderSteps(steps, isBlue) {
         <div class="inline-input-box amber" id="k1UMLBox">
           <div class="iib-label">Enter current Upper Motion Limit</div>
           <div class="field-row single">
-            <div class="field"><label>Current UML Value</label><input type="text" inputmode="decimal" id="k1UMLInput" placeholder="0.00" oninput="onK1UMLInput()"></div>
+            <div class="field"><label>Current UML Value</label><div class="sign-wrap"><button class="sign-toggle" id="k1UMLSign" onclick="toggleSign('k1UML')">+</button><input type="text" inputmode="decimal" id="k1UMLInput" placeholder="0.00" oninput="onK1UMLInput()"></div></div>
           </div>
           <div class="calc-result${calcReady?' show':''}" id="k1CalcResult">
             <div class="result-label">New Upper Motion Limit — Enter This Value</div>
@@ -436,7 +441,7 @@ function renderSteps(steps, isBlue) {
         <div class="inline-input-box amber" id="movingInputBox">
           <div class="iib-label">Enter the moving tip wear value</div>
           <div class="field-row single">
-            <div class="field"><label>Moving Tip Wear</label><input type="text" inputmode="decimal" id="p1MovingInput" placeholder="0.00" oninput="onMovingInput()" class="focus-blue"></div>
+            <div class="field"><label>Moving Tip Wear</label><div class="sign-wrap"><button class="sign-toggle blue" id="p1MovingSign" onclick="toggleSign('p1Moving')">+</button><input type="text" inputmode="decimal" id="p1MovingInput" placeholder="0.00" oninput="onMovingInput()" class="focus-blue"></div></div>
           </div>
         </div>`;
     } else if (step.inlineInput === 'jt7') {
@@ -444,7 +449,7 @@ function renderSteps(steps, isBlue) {
         <div class="inline-input-box" id="jt7InputBox">
           <div class="iib-label">Enter the current JT7 encoder value</div>
           <div class="field-row single">
-            <div class="field"><label>JT7 Encoder Value</label><input type="text" inputmode="decimal" id="p1JT7Input" placeholder="0.000" oninput="onJT7Input()" class="focus-blue"></div></div>
+            <div class="field"><label>JT7 Encoder Value</label><div class="sign-wrap"><button class="sign-toggle blue" id="p1JT7Sign" onclick="toggleSign('p1JT7')">+</button><input type="text" inputmode="decimal" id="p1JT7Input" placeholder="0.000" oninput="onJT7Input()" class="focus-blue"></div></div>
           </div>
           <div class="calc-result blue" id="p1CalcResult">
             <div class="result-label">Calculated New JT7 Value</div>
@@ -469,10 +474,31 @@ function renderSteps(steps, isBlue) {
   });
 }
 
+// ── SIGN TOGGLE ──
+const signs = { k1Moving:1, k1Fixed:1, k1UML:1, p1Moving:1, p1JT7:1 };
+function toggleSign(field) {
+  signs[field] *= -1;
+  const btn = document.getElementById(field+'Sign');
+  if (btn) {
+    btn.textContent = signs[field] < 0 ? '−' : '+';
+    btn.classList.toggle('negative', signs[field] < 0);
+  }
+  // re-fire the relevant input handler to update cd and calc
+  const handlers = { k1Moving: onK1WearInput, k1Fixed: onK1WearInput, k1UML: onK1UMLInput, p1Moving: onMovingInput, p1JT7: onJT7Input };
+  if (handlers[field]) handlers[field]();
+}
+function applySign(field, val) { return isNaN(val) ? NaN : Math.abs(val) * signs[field]; }
+function syncSignBtn(field, value) {
+  const neg = value < 0;
+  signs[field] = neg ? -1 : 1;
+  const btn = document.getElementById(field+'Sign');
+  if (btn) { btn.textContent = neg ? '−' : '+'; btn.classList.toggle('negative', neg); }
+}
+
 // ── INPUT HANDLERS ──
 function onK1WearInput() {
-  const m = parseFloat(document.getElementById('k1MovingInput').value);
-  const f = parseFloat(document.getElementById('k1FixedInput').value);
+  const m = applySign('k1Moving', parseFloat(document.getElementById('k1MovingInput').value));
+  const f = applySign('k1Fixed',  parseFloat(document.getElementById('k1FixedInput').value));
   if (!isNaN(m) && !isNaN(f)) {
     cd.k1Moving = m; cd.k1Fixed = f;
     tryCalcK1();
@@ -480,7 +506,7 @@ function onK1WearInput() {
 }
 
 function onK1UMLInput() {
-  const u = parseFloat(document.getElementById('k1UMLInput').value);
+  const u = applySign('k1UML', parseFloat(document.getElementById('k1UMLInput').value));
   if (!isNaN(u)) {
     cd.k1UML = u;
     tryCalcK1();
@@ -504,12 +530,12 @@ function tryCalcK1() {
 }
 
 function onMovingInput() {
-  const m = parseFloat(document.getElementById('p1MovingInput').value);
+  const m = applySign('p1Moving', parseFloat(document.getElementById('p1MovingInput').value));
   if (!isNaN(m)) { cd.p1Moving = m; cd.p1IsPositive = m > 0; document.getElementById('statusText').textContent = 'Moving tip value set'; }
 }
 
 function onJT7Input() {
-  const j = parseFloat(document.getElementById('p1JT7Input').value);
+  const j = applySign('p1JT7', parseFloat(document.getElementById('p1JT7Input').value));
   if (!isNaN(j)) { cd.p1JT7 = j; tryCalcP1(); }
 }
 
@@ -533,17 +559,17 @@ function tryCalcP1() {
 function restoreInputs() {
   const m = document.getElementById('k1MovingInput');
   const f = document.getElementById('k1FixedInput');
-  if (m && cd.k1Moving !== undefined) m.value = cd.k1Moving;
-  if (f && cd.k1Fixed  !== undefined) f.value = cd.k1Fixed;
+  if (m && cd.k1Moving !== undefined) { m.value = Math.abs(cd.k1Moving); syncSignBtn('k1Moving', cd.k1Moving); }
+  if (f && cd.k1Fixed  !== undefined) { f.value = Math.abs(cd.k1Fixed);  syncSignBtn('k1Fixed',  cd.k1Fixed); }
 
   const u = document.getElementById('k1UMLInput');
-  if (u && cd.k1UML !== undefined) { u.value = cd.k1UML; tryCalcK1(); }
+  if (u && cd.k1UML !== undefined) { u.value = Math.abs(cd.k1UML); syncSignBtn('k1UML', cd.k1UML); tryCalcK1(); }
 
   const pm = document.getElementById('p1MovingInput');
-  if (pm && cd.p1Moving !== undefined) pm.value = cd.p1Moving;
+  if (pm && cd.p1Moving !== undefined) { pm.value = Math.abs(cd.p1Moving); syncSignBtn('p1Moving', cd.p1Moving); }
 
   const pj = document.getElementById('p1JT7Input');
-  if (pj && cd.p1JT7 !== undefined) { pj.value = cd.p1JT7; tryCalcP1(); }
+  if (pj && cd.p1JT7 !== undefined) { pj.value = Math.abs(cd.p1JT7); syncSignBtn('p1JT7', cd.p1JT7); tryCalcP1(); }
 }
 
 // ── SHOW STEP ──
